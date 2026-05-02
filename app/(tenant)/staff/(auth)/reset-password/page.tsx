@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense } from "react"
-import { TenantResetPasswordForm } from "@/components/tenant/auth/tenant-reset-password-form"
+import { TenantResetPasswordForm } from "components/tenant/auth/tenant-reset-password-form"
 
 export default function StaffResetPasswordPage() {
   return (

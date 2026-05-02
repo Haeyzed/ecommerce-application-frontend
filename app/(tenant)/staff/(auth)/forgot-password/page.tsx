@@ -2,22 +2,22 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { forgotPasswordSchema, ForgotPasswordFormValues } from "@/lib/validation/auth"
-import { Button } from "@/components/ui/button"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { forgotPasswordSchema, ForgotPasswordFormValues } from "lib/validation/auth"
+import { Button } from "components/ui/button"
+import { Field, FieldGroup, FieldLabel } from "components/ui/field"
+import { Input } from "components/ui/input"
+import { Alert, AlertDescription } from "components/ui/alert"
 import { useState } from "react"
 import Link from "next/link"
-import { useTenantAuth } from "@/components/providers/tenant-auth-provider"
-import { createCustomerAuthService } from "@/lib/api/tenant/auth"
-import { ApiError } from "@/lib/api/errors"
-import { Spinner } from "@/components/ui/spinner"
-import { TenantMetadata } from "@/components/tenant/tenant-metadata"
+import { useTenantAuth } from "components/providers/tenant-auth-provider"
+import { createStaffAuthService } from "lib/api/tenant/auth"
+import { ApiError } from "lib/api/errors"
+import { Spinner } from "components/ui/spinner"
+import { TenantMetadata } from "components/tenant/tenant-metadata"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-export default function CustomerForgotPasswordPage() {
+export default function StaffForgotPasswordPage() {
   const { subdomain, settings } = useTenantAuth()
   const [globalError, setGlobalError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export default function CustomerForgotPasswordPage() {
     setGlobalError(null)
     setSuccessMessage(null)
     try {
-      const service = createCustomerAuthService(subdomain)
+      const service = createStaffAuthService(subdomain)
       await service.forgotPassword(data)
       setSuccessMessage("Password reset link sent! Check your email.")
     } catch (error) {
@@ -62,7 +62,7 @@ export default function CustomerForgotPasswordPage() {
             <FieldGroup>
               <div className="flex flex-col items-center gap-1 text-center">
                 <h1 className="text-2xl font-bold">{settings?.name ?? "Store"}</h1>
-                <p className="text-sm text-muted-foreground">Reset your password</p>
+                <p className="text-sm text-muted-foreground">Staff password reset</p>
               </div>
 
               {globalError && (
@@ -86,7 +86,7 @@ export default function CustomerForgotPasswordPage() {
               </Field>
 
               <div className="text-center text-sm">
-                <Link href="/customer/login" className="underline underline-offset-4">Back to login</Link>
+                <Link href="/staff/login" className="underline underline-offset-4">Back to login</Link>
               </div>
             </FieldGroup>
           </form>

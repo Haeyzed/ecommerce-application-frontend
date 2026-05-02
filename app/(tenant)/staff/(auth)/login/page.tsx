@@ -1,8 +1,8 @@
 "use client"
 
-import { TenantLoginForm } from "@/components/tenant/auth/tenant-login-form"
-import { TenantMetadata } from "@/components/tenant/tenant-metadata"
-import { TenantRouteGuard } from "@/components/auth/tenant-route-guard"
+import { TenantLoginForm } from "components/tenant/auth/tenant-login-form"
+import { TenantMetadata } from "components/tenant/tenant-metadata"
+import { TenantRouteGuard } from "components/auth/tenant-route-guard"
 import { Suspense } from "react"
 
 export default function StaffLoginPage() {

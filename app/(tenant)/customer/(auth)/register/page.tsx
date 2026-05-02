@@ -1,8 +1,8 @@
 "use client"
 
-import { TenantRegisterForm } from "@/components/tenant/auth/tenant-register-form"
-import { TenantMetadata } from "@/components/tenant/tenant-metadata"
-import { TenantRouteGuard } from "@/components/auth/tenant-route-guard"
+import { TenantRegisterForm } from "components/tenant/auth/tenant-register-form"
+import { TenantMetadata } from "components/tenant/tenant-metadata"
+import { TenantRouteGuard } from "components/auth/tenant-route-guard"
 import { Suspense } from "react"
 
 export default function CustomerRegisterPage() {

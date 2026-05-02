@@ -1,12 +1,12 @@
 "use client"
 
 import { Suspense } from "react"
-import { TenantResetPasswordForm } from "@/components/tenant/auth/tenant-reset-password-form"
+import { TenantResetPasswordForm } from "components/tenant/auth/tenant-reset-password-form"
 
-export default function StaffResetPasswordPage() {
+export default function CustomerResetPasswordPage() {
   return (
     <Suspense fallback={<div className="flex min-h-svh items-center justify-center"><p className="text-sm text-muted-foreground">Loading...</p></div>}>
-      <TenantResetPasswordForm role="staff" />
+      <TenantResetPasswordForm role="customer" />
     </Suspense>
   )
 }

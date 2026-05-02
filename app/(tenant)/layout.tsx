@@ -3,6 +3,7 @@
 import { useTenantSubdomain } from "@/lib/hooks/use-tenant-subdomain"
 import { TenantAuthProvider } from "@/components/providers/tenant-auth-provider"
 import { usePathname } from "next/navigation"
+import { Spinner } from "@/components/ui/spinner"
 
 function resolveRole(pathname: string): "customer" | "staff" {
   if (pathname.startsWith("/staff")) {
@@ -12,8 +13,8 @@ function resolveRole(pathname: string): "customer" | "staff" {
 }
 
 export default function TenantLayout({
-  children,
-}: {
+                                       children,
+                                     }: {
   children: React.ReactNode
 }) {
   const subdomain = useTenantSubdomain()
@@ -23,7 +24,7 @@ export default function TenantLayout({
   if (!subdomain) {
     return (
       <div className="flex min-h-svh items-center justify-center">
-        <p className="text-sm text-muted-foreground">Resolving tenant...</p>
+        <Spinner />
       </div>
     )
   }
