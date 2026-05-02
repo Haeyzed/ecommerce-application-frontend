@@ -1,0 +1,23 @@
+"use client"
+
+import { TenantRegisterForm } from "@/components/tenant/auth/tenant-register-form"
+import { TenantMetadata } from "@/components/tenant/tenant-metadata"
+import { TenantRouteGuard } from "@/components/auth/tenant-route-guard"
+import { Suspense } from "react"
+
+export default function CustomerRegisterPage() {
+  return (
+    <>
+      <TenantMetadata pageTitle="Customer Register" />
+      <div className="flex min-h-svh items-center justify-center p-6">
+        <div className="w-full max-w-xs">
+          <TenantRouteGuard>
+            <Suspense fallback={<div>Loading form...</div>}>
+              <TenantRegisterForm role="customer" />
+            </Suspense>
+          </TenantRouteGuard>
+        </div>
+      </div>
+    </>
+  )
+}
