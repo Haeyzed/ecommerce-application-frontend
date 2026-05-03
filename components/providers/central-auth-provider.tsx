@@ -9,12 +9,14 @@ import {
 } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { centralAuthService } from "@/lib/api/central/auth"
+import { createCentralSettingsService, type CentralSettings } from "@/lib/api/central/settings" // Import settings service and type
 import { getToken, setToken, removeToken } from "@/lib/api/client"
 import type { User } from "@/lib/types/models/auth"
 import { ApiError } from "@/lib/api/errors"
 
 export type CentralAuthContextValue = {
   user: User | null
+  settings: CentralSettings | null
   isLoading: boolean
   isAuthenticated: boolean
   setUser: (user: User | null) => void
@@ -26,6 +28,7 @@ export type CentralAuthContextValue = {
 const CentralAuthContext = createContext<CentralAuthContextValue | null>(null)
 
 const CENTRAL_ME_KEY = ["central", "auth", "me"] as const
+const CENTRAL_SETTINGS_KEY = ["central", "settings"] as const
 
 async function fetchCentralUser(): Promise<User | null> {
   const token = getToken("central")
@@ -43,13 +46,30 @@ async function fetchCentralUser(): Promise<User | null> {
   }
 }
 
+async function fetchCentralSettings(): Promise<CentralSettings | null> {
+  try {
+    const service = createCentralSettingsService()
+    const response = await service.getSettings()
+    return response.data
+  } catch {
+    return null
+  }
+}
+
 export function CentralAuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
 
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading: userLoading } = useQuery({ // Renamed isLoading to userLoading
     queryKey: CENTRAL_ME_KEY,
     queryFn: fetchCentralUser,
     staleTime: 60_000,
+    retry: 1,
+  })
+
+  const { data: settings, isLoading: settingsLoading } = useQuery({ // Added settings query
+    queryKey: CENTRAL_SETTINGS_KEY,
+    queryFn: fetchCentralSettings,
+    staleTime: 300_000,
     retry: 1,
   })
 
@@ -86,14 +106,15 @@ export function CentralAuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CentralAuthContextValue>(
     () => ({
       user: user ?? null,
-      isLoading,
+      settings: settings ?? null, // Included settings
+      isLoading: userLoading || settingsLoading, // Updated isLoading
       isAuthenticated: (user ?? null) !== null,
       setUser,
       loginWithToken,
       logout,
       refreshUser,
     }),
-    [user, isLoading, setUser, loginWithToken, logout, refreshUser],
+    [user, settings, userLoading, settingsLoading, setUser, loginWithToken, logout, refreshUser], // Updated dependencies
   )
 
   return (

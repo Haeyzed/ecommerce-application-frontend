@@ -6,7 +6,7 @@ import React, { useEffect } from "react"
 
 /**
  * Redirects authenticated tenant users away from auth pages.
- * Staff → /dashboard, Customer → /
+ * Admin → /admin/dashboard, Customer → /customer/dashboard
  */
 export function TenantRouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -14,7 +14,7 @@ export function TenantRouteGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace(role === "staff" ? "/staff/dashboard" : "/customer/dashboard")
+      router.replace(role === "admin" ? "/admin/dashboard" : "/customer/dashboard")
     }
   }, [isAuthenticated, isLoading, role, router])
 

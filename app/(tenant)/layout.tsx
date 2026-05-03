@@ -5,9 +5,9 @@ import { TenantAuthProvider } from "@/components/providers/tenant-auth-provider"
 import { usePathname } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 
-function resolveRole(pathname: string): "customer" | "staff" {
-  if (pathname.startsWith("/staff")) {
-    return "staff"
+function resolveRole(pathname: string): "customer" | "admin" {
+  if (pathname.startsWith("/admin")) {
+    return "admin"
   }
   return "customer"
 }

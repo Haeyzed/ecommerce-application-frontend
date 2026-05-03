@@ -12,7 +12,7 @@ import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useTenantAuth } from "@/components/providers/tenant-auth-provider"
-import { createCustomerAuthService, createStaffAuthService } from "@/lib/api/tenant/auth"
+import { createCustomerAuthService, createAdminAuthService } from "@/lib/api/tenant/auth"
 import { ApiError } from "@/lib/api/errors"
 import { Spinner } from "@/components/ui/spinner"
 import { TenantMetadata } from "@/components/tenant/tenant-metadata"
@@ -20,10 +20,10 @@ import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 interface TenantResetPasswordFormProps {
-  role: "customer" | "staff"
+  userType: "customer" | "admin" // Changed from role to userType
 }
 
-export function TenantResetPasswordForm({ role }: TenantResetPasswordFormProps) {
+export function TenantResetPasswordForm({ userType }: TenantResetPasswordFormProps) { // Changed from role to userType
   const router = useRouter()
   const searchParams = useSearchParams()
   const { subdomain, settings } = useTenantAuth()
@@ -47,9 +47,9 @@ export function TenantResetPasswordForm({ role }: TenantResetPasswordFormProps) 
     setGlobalError(null)
     try {
       const service =
-        role === "customer"
+        userType === "customer" // Changed from role to userType
           ? createCustomerAuthService(subdomain)
-          : createStaffAuthService(subdomain)
+          : createAdminAuthService(subdomain)
       await service.resetPassword(data)
       setIsSuccess(true)
     } catch (error) {
@@ -70,8 +70,8 @@ export function TenantResetPasswordForm({ role }: TenantResetPasswordFormProps) 
     }
   }
 
-  const loginPath = role === "customer" ? "/customer/login" : "/staff/login"
-  const roleLabel = role === "customer" ? "Customer" : "Staff"
+  const loginPath = userType === "customer" ? "/customer/login" : "/admin/login" // Changed from role to userType
+  const roleLabel = userType === "customer" ? "Customer" : "Admin" // Changed from role to userType
 
   if (isSuccess) {
     return (

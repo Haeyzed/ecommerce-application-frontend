@@ -38,24 +38,24 @@ import {
 } from "@hugeicons/core-free-icons"
 
 const navItems = [
-  { title: "Dashboard", href: "/staff/dashboard", icon: DashboardSquare01Icon },
-  { title: "Orders", href: "/staff/orders", icon: ShoppingBag01Icon },
-  { title: "Products", href: "/staff/products", icon: Package01Icon },
-  { title: "Categories", href: "/staff/categories", icon: Tag01Icon },
-  { title: "Customers", href: "/staff/customers", icon: UserMultiple02Icon },
-  { title: "Analytics", href: "/staff/analytics", icon: BarChartIcon },
-  { title: "Notifications", href: "/staff/notifications", icon: Notification01Icon },
-  { title: "Settings", href: "/staff/settings", icon: Settings01Icon },
+  { title: "Dashboard", href: "/admin/dashboard", icon: DashboardSquare01Icon },
+  { title: "Orders", href: "/admin/orders", icon: ShoppingBag01Icon },
+  { title: "Products", href: "/admin/products", icon: Package01Icon },
+  { title: "Categories", href: "/admin/categories", icon: Tag01Icon },
+  { title: "Customers", href: "/admin/customers", icon: UserMultiple02Icon },
+  { title: "Analytics", href: "/admin/analytics", icon: BarChartIcon },
+  { title: "Notifications", href: "/admin/notifications", icon: Notification01Icon },
+  { title: "Settings", href: "/admin/settings", icon: Settings01Icon },
 ]
 
-export function StaffSidebar() {
+export function AdminSidebar() {
   const { user, settings, logout } = useTenantAuth()
   const router = useRouter()
   const pathname = usePathname()
 
   const handleLogout = async () => {
     await logout()
-    router.push("/staff/login")
+    router.push("/admin/login")
   }
 
   return (
@@ -63,7 +63,7 @@ export function StaffSidebar() {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" render={<Link href="/staff/dashboard" />}>
+              <SidebarMenuButton size="lg" render={<Link href="/admin/dashboard" />}>
                 {settings?.logo_url ? (
                     <img
                         src={settings.logo_url}
@@ -77,7 +77,7 @@ export function StaffSidebar() {
                 )}
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">{settings?.name ?? "Store"}</span>
-                  <span className="text-xs text-muted-foreground">Staff Panel</span>
+                  <span className="text-xs text-muted-foreground">Admin Panel</span>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -111,7 +111,7 @@ export function StaffSidebar() {
               <DropdownMenu>
                 <DropdownMenuTrigger render={<SidebarMenuButton />}>
                   <HugeiconsIcon icon={User02Icon} className="size-4" />
-                  <span className="truncate">{user?.name ?? "Staff"}</span>
+                  <span className="truncate">{user?.name ?? "Admin"}</span>
                   <HugeiconsIcon icon={ArrowUp01Icon} className="ms-auto size-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="top" className="w-[--radix-popper-anchor-width]">

@@ -13,7 +13,7 @@ export default function CustomerLoginPage() {
         <div className="w-full max-w-xs">
           <TenantRouteGuard>
             <Suspense fallback={<div>Loading form...</div>}>
-              <TenantLoginForm role="customer" />
+              <TenantLoginForm userType="customer" />
             </Suspense>
           </TenantRouteGuard>
         </div>

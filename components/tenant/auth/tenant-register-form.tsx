@@ -17,19 +17,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useTenantAuth, type TenantRole } from "@/components/providers/tenant-auth-provider"
-import { createCustomerAuthService, createStaffAuthService } from "@/lib/api/tenant/auth"
+import { useTenantAuth, type TenantUserType } from "@/components/providers/tenant-auth-provider" // Changed import
+import { createCustomerAuthService, createAdminAuthService } from "@/lib/api/tenant/auth"
 import { ApiError } from "@/lib/api/errors"
 import { Spinner } from "@/components/ui/spinner"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 interface TenantRegisterFormProps extends React.ComponentProps<"form"> {
-  role: TenantRole
+  userType: TenantUserType // Changed from role to userType
 }
 
 export function TenantRegisterForm({
-  role,
+  userType, // Changed from role to userType
   className,
   ...props
 }: TenantRegisterFormProps) {
@@ -38,9 +38,9 @@ export function TenantRegisterForm({
   const [globalError, setGlobalError] = useState<string | null>(null)
 
   const authService =
-    role === "customer"
+    userType === "customer" // Changed from role to userType
       ? createCustomerAuthService(subdomain)
-      : createStaffAuthService(subdomain)
+      : createAdminAuthService(subdomain)
 
   const {
     register,
@@ -57,7 +57,7 @@ export function TenantRegisterForm({
       const response = await authService.register(data)
       const { user, token } = response.data
       loginWithToken(token, user)
-      router.push(role === "staff" ? "/staff/dashboard" : "/customer/dashboard")
+      router.push(userType === "admin" ? "/admin/dashboard" : "/customer/dashboard") // Changed from role to userType
       router.refresh()
     } catch (error) {
       if (error instanceof ApiError) {
@@ -78,8 +78,8 @@ export function TenantRegisterForm({
   }
 
   const appName = settings?.name ?? "Store"
-  const roleLabel = role === "staff" ? "Staff" : "Customer"
-  const loginPath = role === "staff" ? "/staff/login" : "/customer/login"
+  const roleLabel = userType === "admin" ? "Admin" : "Customer" // Changed from role to userType
+  const loginPath = userType === "admin" ? "/admin/login" : "/customer/login" // Changed from role to userType
 
   return (
     <form
@@ -91,7 +91,7 @@ export function TenantRegisterForm({
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">{appName}</h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Create a {roleLabel.toLowerCase()} account
+            Create an {roleLabel.toLowerCase()} account
           </p>
         </div>
 

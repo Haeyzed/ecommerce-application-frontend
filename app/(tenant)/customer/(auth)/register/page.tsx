@@ -13,7 +13,7 @@ export default function CustomerRegisterPage() {
         <div className="w-full max-w-xs">
           <TenantRouteGuard>
             <Suspense fallback={<div>Loading form...</div>}>
-              <TenantRegisterForm role="customer" />
+              <TenantRegisterForm userType="customer" />
             </Suspense>
           </TenantRouteGuard>
         </div>

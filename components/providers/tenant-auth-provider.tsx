@@ -10,18 +10,18 @@ import {
   type ReactNode,
 } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createCustomerAuthService, createStaffAuthService } from "@/lib/api/tenant/auth"
+import { createCustomerAuthService, createAdminAuthService } from "@/lib/api/tenant/auth"
 import { createTenantSettingsService } from "@/lib/api/tenant/settings"
 import { getToken, setToken, removeToken } from "@/lib/api/client"
 import type { TenantUser } from "@/lib/types/models/auth"
 import type { TenantSettings } from "@/lib/types/models/tenant"
 import { ApiError } from "@/lib/api/errors"
 
-export type TenantRole = "customer" | "staff"
+export type TenantUserType = "customer" | "admin"
 
 export type TenantAuthContextValue = {
   user: TenantUser | null
-  role: TenantRole
+  userType: TenantUserType
   subdomain: string
   settings: TenantSettings | null
   isLoading: boolean
@@ -33,8 +33,8 @@ export type TenantAuthContextValue = {
 
 const TenantAuthContext = createContext<TenantAuthContextValue | null>(null)
 
-function tenantMeKey(subdomain: string, role: TenantRole) {
-  return ["tenant", subdomain, role, "me"] as const
+function tenantMeKey(subdomain: string, userType: TenantUserType) {
+  return ["tenant", subdomain, userType, "me"] as const
 }
 
 function tenantSettingsKey(subdomain: string) {
@@ -44,20 +44,20 @@ function tenantSettingsKey(subdomain: string) {
 export function TenantAuthProvider({
   children,
   subdomain,
-  role,
+  userType,
 }: {
   children: ReactNode
   subdomain: string
-  role: TenantRole
+  userType: TenantUserType
 }) {
   const queryClient = useQueryClient()
-  const meKey = tenantMeKey(subdomain, role)
+  const meKey = tenantMeKey(subdomain, userType)
   const settingsKey = tenantSettingsKey(subdomain)
 
   const authService =
-    role === "customer"
+    userType === "customer"
       ? createCustomerAuthService(subdomain)
-      : createStaffAuthService(subdomain)
+      : createAdminAuthService(subdomain)
 
   const settingsService = createTenantSettingsService(subdomain)
 
@@ -121,7 +121,7 @@ export function TenantAuthProvider({
   const value = useMemo<TenantAuthContextValue>(
     () => ({
       user: user ?? null,
-      role,
+      userType,
       subdomain,
       settings: settings ?? null,
       isLoading: userLoading || settingsLoading,
@@ -130,7 +130,7 @@ export function TenantAuthProvider({
       logout,
       refreshUser,
     }),
-    [user, role, subdomain, settings, userLoading, settingsLoading, loginWithToken, logout, refreshUser],
+    [user, userType, subdomain, settings, userLoading, settingsLoading, loginWithToken, logout, refreshUser],
   )
 
   return (

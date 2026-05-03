@@ -18,19 +18,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useTenantAuth, type TenantRole } from "@/components/providers/tenant-auth-provider"
-import { createCustomerAuthService, createStaffAuthService } from "@/lib/api/tenant/auth"
+import { useTenantAuth, type TenantUserType } from "@/components/providers/tenant-auth-provider" // Changed import
+import { createCustomerAuthService, createAdminAuthService } from "@/lib/api/tenant/auth"
 import { ApiError } from "@/lib/api/errors"
 import { Spinner } from "@/components/ui/spinner"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 interface TenantLoginFormProps extends React.ComponentProps<"form"> {
-  role: TenantRole
+  userType: TenantUserType // Changed from role to userType
 }
 
 export function TenantLoginForm({
-  role,
+  userType, // Changed from role to userType
   className,
   ...props
 }: TenantLoginFormProps) {
@@ -40,9 +40,9 @@ export function TenantLoginForm({
   const [socialLoading, setSocialLoading] = useState<"google" | "facebook" | "github" | null>(null)
 
   const authService =
-    role === "customer"
+    userType === "customer" // Changed from role to userType
       ? createCustomerAuthService(subdomain)
-      : createStaffAuthService(subdomain)
+      : createAdminAuthService(subdomain)
 
   const {
     register,
@@ -59,7 +59,7 @@ export function TenantLoginForm({
       const response = await authService.login(data)
       const { user, token } = response.data
       loginWithToken(token, user)
-      router.push(role === "staff" ? "/staff/dashboard" : "/customer/dashboard")
+      router.push(userType === "admin" ? "/admin/dashboard" : "/customer/dashboard") // Changed from role to userType
       router.refresh()
     } catch (error) {
       if (error instanceof ApiError) {
@@ -80,7 +80,7 @@ export function TenantLoginForm({
   }
 
   const handleSocialLogin = async (provider: "google" | "facebook" | "github") => {
-    if (role !== "customer") return
+    if (userType !== "customer") return // Changed from role to userType
     try {
       setSocialLoading(provider)
       setGlobalError(null)
@@ -95,9 +95,9 @@ export function TenantLoginForm({
 
   const isFormDisabled = isSubmitting || socialLoading !== null
   const appName = settings?.name ?? "Store"
-  const roleLabel = role === "staff" ? "Staff" : "Customer"
-  const registerPath = role === "staff" ? "/staff/register" : "/customer/register"
-  const forgotPath = role === "staff" ? "/staff/forgot-password" : "/customer/forgot-password"
+  const roleLabel = userType === "admin" ? "Admin" : "Customer" // Changed from role to userType
+  const registerPath = userType === "admin" ? "/admin/register" : "/customer/register" // Changed from role to userType
+  const forgotPath = userType === "admin" ? "/admin/forgot-password" : "/customer/forgot-password" // Changed from role to userType
 
   return (
     <form
@@ -167,7 +167,7 @@ export function TenantLoginForm({
           </Button>
         </Field>
 
-        {role === "customer" && (
+        {userType === "customer" && ( // Changed from role to userType
           <>
             <FieldSeparator>Or continue with</FieldSeparator>
             <div className="grid grid-cols-3 gap-3">

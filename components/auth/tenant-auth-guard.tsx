@@ -9,7 +9,7 @@ import React, { useEffect } from "react"
  */
 export function TenantAuthGuard({
   children,
-  loginPath = "/staff/login",
+  loginPath = "/admin/login",
 }: {
   children: React.ReactNode
   loginPath?: string

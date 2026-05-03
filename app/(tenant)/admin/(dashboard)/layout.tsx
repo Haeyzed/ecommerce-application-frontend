@@ -2,7 +2,7 @@
 
 import { TenantAuthGuard } from "@/components/auth/tenant-auth-guard"
 import { TenantMetadata } from "@/components/tenant/tenant-metadata"
-import { StaffSidebar } from "@/components/tenant/staff/staff-sidebar"
+import { AdminSidebar } from "@/components/tenant/admin/admin-sidebar"
 import {
   SidebarInset,
   SidebarProvider,
@@ -10,16 +10,16 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 
-export default function StaffDashboardLayout({
+export default function AdminDashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <TenantAuthGuard loginPath="/staff/login">
-      <TenantMetadata pageTitle="Staff Panel" />
+    <TenantAuthGuard loginPath="/admin/login">
+      <TenantMetadata pageTitle="Admin Panel" />
       <SidebarProvider>
-        <StaffSidebar />
+        <AdminSidebar />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2 px-4">
