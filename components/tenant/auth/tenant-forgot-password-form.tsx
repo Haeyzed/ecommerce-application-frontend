@@ -10,12 +10,11 @@ import { Alert, AlertDescription } from "components/ui/alert"
 import { useState } from "react"
 import Link from "next/link"
 import { useTenantAuth } from "components/providers/tenant-auth-provider"
-import { createAdminAuthService } from "lib/api/tenant/auth" // This needs to be dynamic based on userType
+import {createAdminAuthService, createCustomerAuthService} from "lib/api/tenant/auth"
 import { ApiError } from "lib/api/errors"
 import { Spinner } from "components/ui/spinner"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { createCustomerAuthService } from "lib/api/tenant/customer-auth" // Import for customer
 
 interface TenantForgotPasswordFormProps {
   userType: "admin" | "customer"

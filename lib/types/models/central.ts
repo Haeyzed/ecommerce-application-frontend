@@ -65,3 +65,9 @@ export interface DropdownOption {
   value: string | number
   label: string
 }
+
+export type CentralSettings = {
+  name: string
+  favicon_url: string | null
+  // Add other central settings here as needed
+}

@@ -1,15 +1,11 @@
-import { apiClient } from "../client"
+import { api } from "../client"
+import {CentralSettings} from "@/lib/types/models/central";
 
-export type CentralSettings = {
-  name: string
-  favicon_url: string | null
-  // Add other central settings here as needed
-}
 
 export function createCentralSettingsService() {
   return {
     async getSettings() {
-      return apiClient.get<CentralSettings>("/central/settings")
+      return api.get<CentralSettings>("/central/settings")
     },
   }
 }

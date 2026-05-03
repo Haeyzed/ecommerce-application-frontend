@@ -26,11 +26,11 @@ import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 interface TenantLoginFormProps extends React.ComponentProps<"form"> {
-  userType: TenantUserType // Changed from role to userType
+  userType: TenantUserType
 }
 
 export function TenantLoginForm({
-  userType, // Changed from role to userType
+  userType,
   className,
   ...props
 }: TenantLoginFormProps) {
@@ -40,7 +40,7 @@ export function TenantLoginForm({
   const [socialLoading, setSocialLoading] = useState<"google" | "facebook" | "github" | null>(null)
 
   const authService =
-    userType === "customer" // Changed from role to userType
+    userType === "customer"
       ? createCustomerAuthService(subdomain)
       : createAdminAuthService(subdomain)
 
