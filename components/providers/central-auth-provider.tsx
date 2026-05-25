@@ -9,9 +9,10 @@ import {
 } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { centralAuthService } from "@/lib/api/central/auth"
-import { createCentralSettingsService, type CentralSettings } from "@/lib/api/central/settings" // Import settings service and type
+import { createCentralSettingsService } from "@/lib/api/central/settings"
 import { getToken, setToken, removeToken } from "@/lib/api/client"
 import type { User } from "@/lib/types/models/auth"
+import type { CentralSettings } from "@/lib/types/models/central"
 import { ApiError } from "@/lib/api/errors"
 
 export type CentralAuthContextValue = {
@@ -36,7 +37,7 @@ async function fetchCentralUser(): Promise<User | null> {
 
   try {
     const response = await centralAuthService.getMe()
-    return response.data
+    return response.data.data
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       removeToken("central")
@@ -49,8 +50,8 @@ async function fetchCentralUser(): Promise<User | null> {
 async function fetchCentralSettings(): Promise<CentralSettings | null> {
   try {
     const service = createCentralSettingsService()
-    const response = await service.getSettings()
-    return response.data
+    const response = await service.getPublicSettings()
+    return response.data.data
   } catch {
     return null
   }
@@ -59,14 +60,14 @@ async function fetchCentralSettings(): Promise<CentralSettings | null> {
 export function CentralAuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
 
-  const { data: user, isLoading: userLoading } = useQuery({ // Renamed isLoading to userLoading
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: CENTRAL_ME_KEY,
     queryFn: fetchCentralUser,
     staleTime: 60_000,
     retry: 1,
   })
 
-  const { data: settings, isLoading: settingsLoading } = useQuery({ // Added settings query
+  const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: CENTRAL_SETTINGS_KEY,
     queryFn: fetchCentralSettings,
     staleTime: 300_000,
@@ -106,15 +107,15 @@ export function CentralAuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CentralAuthContextValue>(
     () => ({
       user: user ?? null,
-      settings: settings ?? null, // Included settings
-      isLoading: userLoading || settingsLoading, // Updated isLoading
+      settings: settings ?? null,
+      isLoading: userLoading || settingsLoading,
       isAuthenticated: (user ?? null) !== null,
       setUser,
       loginWithToken,
       logout,
       refreshUser,
     }),
-    [user, settings, userLoading, settingsLoading, setUser, loginWithToken, logout, refreshUser], // Updated dependencies
+    [user, settings, userLoading, settingsLoading, setUser, loginWithToken, logout, refreshUser],
   )
 
   return (

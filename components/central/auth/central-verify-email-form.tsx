@@ -2,67 +2,85 @@
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Field, FieldGroup, FieldDescription } from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Mail01Icon } from "@hugeicons/core-free-icons"
-import React, { useEffect, useState } from "react"
+import React, { useState, useEffect } from "react"
 import { centralAuthService } from "@/lib/api/central/auth"
-import { useRouter } from "next/navigation"
-import { useCentralAuth } from "@/components/providers/central-auth-provider"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { verifyOtpSchema, VerifyOtpFormValues } from "@/lib/validation/auth"
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
+import { ApiError } from "@/lib/api/errors"
+import { Alert01Icon } from "@hugeicons/core-free-icons"
 
 interface CentralVerifyEmailFormProps extends React.ComponentProps<"div"> {
   email?: string
 }
 
-export function CentralVerifyEmailForm({ className, email, ...props }: CentralVerifyEmailFormProps) {
+export function CentralVerifyEmailForm({ className, email: propEmail, ...props }: CentralVerifyEmailFormProps) {
   const router = useRouter()
-  const { user, refreshUser } = useCentralAuth()
-  const [isLoading, setIsLoading] = useState(false)
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
+  const searchParams = useSearchParams()
+  const [email, setEmail] = useState(propEmail || searchParams?.get("email") || "")
+  const [globalError, setGlobalError] = useState<string | null>(null)
+  const [resendCountdown, setResendCountdown] = useState(0)
+
+  const {
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { isSubmitting, errors },
+  } = useForm<VerifyOtpFormValues>({
+    resolver: zodResolver(verifyOtpSchema),
+    defaultValues: {
+      email,
+      otp: "",
+      type: "email_verification",
+    },
+  })
+
+  const otp = watch("otp")
 
   useEffect(() => {
-    if (user?.email_verified_at) {
-      router.push("/central/dashboard")
+    if (resendCountdown > 0) {
+      const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000)
+      return () => clearTimeout(timer)
     }
-  }, [user?.email_verified_at, router])
+  }, [resendCountdown])
 
-  useEffect(() => {
-    let isMounted = true
-
-    const poll = async () => {
-      try {
-        await refreshUser()
-      } catch {
-        // Ignore polling errors (e.g. temporary network/session issues)
+  const onSubmit = async (data: VerifyOtpFormValues) => {
+    setGlobalError(null)
+    try {
+      await centralAuthService.verifyOtp(data)
+      router.push("/central/login")
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setGlobalError(error.message)
+      } else {
+        setGlobalError("An unexpected error occurred. Please try again.")
       }
     }
-
-    void poll()
-    const intervalId = window.setInterval(() => {
-      if (isMounted) {
-        void poll()
-      }
-    }, 5000)
-
-    return () => {
-      isMounted = false
-      window.clearInterval(intervalId)
-    }
-  }, [refreshUser])
+  }
 
   const handleResend = async () => {
-    setIsLoading(true)
-    setStatus("idle")
+    if (!email) {
+      setGlobalError("Email is required")
+      return
+    }
 
+    setGlobalError(null)
     try {
-      await centralAuthService.resendVerification() // Changed authService to centralAuthService
-      setStatus("success")
+      await centralAuthService.resendVerificationOtp({ email })
+      setResendCountdown(60)
     } catch (error) {
-      console.error("Resend failed", error)
-      setStatus("error")
-    } finally {
-      setIsLoading(false)
+      if (error instanceof ApiError) {
+        setGlobalError(error.message)
+      } else {
+        setGlobalError("Failed to resend OTP. Please try again.")
+      }
     }
   }
 
@@ -76,43 +94,70 @@ export function CentralVerifyEmailForm({ className, email, ...props }: CentralVe
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Verify your email</h1>
             <p className="text-sm text-balance text-muted-foreground">
-              We&apos;ve sent a verification link to <span className="font-semibold text-foreground">{email || "your email"}</span>.
+              We&apos;ve sent a 6-digit OTP to <span className="font-semibold text-foreground">{email || "your email"}</span>.
             </p>
           </div>
         </div>
 
-        <Field>
-          <Button
-            onClick={handleResend}
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? (
+        {globalError && (
+          <Alert variant="destructive">
+            <HugeiconsIcon icon={Alert01Icon} className="size-4" />
+            <AlertDescription>{globalError}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <Field>
+            <FieldLabel htmlFor="otp">Enter OTP</FieldLabel>
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              onChange={(value) => setValue("otp", value)}
+              disabled={isSubmitting}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+            {errors.otp && (
+              <p className="text-xs text-destructive">{errors.otp.message}</p>
+            )}
+          </Field>
+
+          <Button type="submit" disabled={isSubmitting || otp.length !== 6} className="w-full">
+            {isSubmitting ? (
               <>
                 <Spinner className="size-4" />
-                Sending...
+                Verifying...
               </>
             ) : (
-              "Resend Verification Email"
+              "Verify Email"
             )}
           </Button>
+        </form>
 
-          {status === "success" && (
-            <p className="mt-2 text-center text-xs text-green-600 font-medium">
-              A new link has been sent to your inbox.
-            </p>
-          )}
-          {status === "error" && (
-            <p className="mt-2 text-center text-xs text-destructive font-medium">
-              Failed to resend. Please try again later.
-            </p>
-          )}
-        </Field>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleResend}
+          disabled={resendCountdown > 0}
+          className="w-full"
+        >
+          {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Didn't receive OTP? Resend"}
+        </Button>
 
         <FieldDescription className="text-center">
-          Wrong email address?{" "}
-          <button className="font-medium text-primary underline underline-offset-4">
-            Edit profile
+          <button
+            type="button"
+            className="font-medium text-primary underline underline-offset-4"
+            onClick={() => router.back()}
+          >
+            Go back
           </button>
         </FieldDescription>
       </FieldGroup>

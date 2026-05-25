@@ -41,7 +41,7 @@ export function ResetPasswordForm({
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      token: token,
+      reset_token: token,
       email: email,
     },
   })
@@ -91,7 +91,7 @@ export function ResetPasswordForm({
           </Alert>
         )}
 
-        <input type="hidden" {...register("token")} />
+        <input type="hidden" {...register("reset_token")} />
         <input type="hidden" {...register("email")} />
 
         <Field>

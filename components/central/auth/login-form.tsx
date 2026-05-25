@@ -10,7 +10,6 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -24,7 +23,7 @@ import { useCentralAuth } from "@/components/providers/central-auth-provider"
 import { Spinner } from "@/components/ui/spinner"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { setToken } from "@/lib/api/client"
+import type { User, LoginData } from "@/lib/types/models/auth"
 
 export function CentralLoginForm({
   className,
@@ -34,7 +33,6 @@ export function CentralLoginForm({
   const searchParams = useSearchParams()
   const { loginWithToken } = useCentralAuth()
   const [globalError, setGlobalError] = useState<string | null>(null)
-  const [socialLoading, setSocialLoading] = useState<"google" | "facebook" | "github" | null>(null)
 
   const {
     register,
@@ -46,23 +44,17 @@ export function CentralLoginForm({
   })
 
   useEffect(() => {
-    if (searchParams?.get("error") === "social_auth_failed") {
-      setGlobalError("Social authentication failed. Please try again.")
+    if (searchParams?.get("error") === "auth_failed") {
+      setGlobalError("Authentication failed. Please try again.")
     }
-    const accessToken = window.location.hash.match(/access_token=([^&]+)/)?.[1]
-    if (accessToken) {
-      setToken(decodeURIComponent(accessToken), "central")
-      window.location.hash = ""
-      router.push("/central/dashboard")
-    }
-  }, [searchParams, router])
+  }, [searchParams])
 
   const onSubmit = async (data: LoginFormValues) => {
     setGlobalError(null)
     try {
       const response = await centralAuthService.login(data)
-      const { user, token } = response.data
-      loginWithToken(token, user)
+      const loginResponse = response.data.data
+      loginWithToken(loginResponse.token, loginResponse.user)
       router.push("/central/dashboard")
       router.refresh()
     } catch (error) {
@@ -83,19 +75,7 @@ export function CentralLoginForm({
     }
   }
 
-  const handleSocialLogin = async (provider: "google" | "facebook" | "github") => {
-    try {
-      setSocialLoading(provider)
-      setGlobalError(null)
-      const response = await centralAuthService.getSocialRedirect(provider)
-      window.location.href = response.data.url
-    } catch {
-      setGlobalError(`Failed to initialize ${provider} login.`)
-      setSocialLoading(null)
-    }
-  }
-
-  const isFormDisabled = isSubmitting || socialLoading !== null
+  const isFormDisabled = isSubmitting
 
   return (
     <form
@@ -164,20 +144,6 @@ export function CentralLoginForm({
             )}
           </Button>
         </Field>
-
-        <FieldSeparator>Or continue with</FieldSeparator>
-
-        <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" type="button" disabled={isFormDisabled} onClick={() => handleSocialLogin("google")}>
-            {socialLoading === "google" ? <Spinner className="size-4" /> : "Google"}
-          </Button>
-          <Button variant="outline" type="button" disabled={isFormDisabled} onClick={() => handleSocialLogin("github")}>
-            {socialLoading === "github" ? <Spinner className="size-4" /> : "GitHub"}
-          </Button>
-          <Button variant="outline" type="button" disabled={isFormDisabled} onClick={() => handleSocialLogin("facebook")}>
-            {socialLoading === "facebook" ? <Spinner className="size-4" /> : "Facebook"}
-          </Button>
-        </div>
 
         <Field>
           <FieldDescription className="text-center">

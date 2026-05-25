@@ -10,7 +10,6 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -20,7 +19,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { centralAuthService } from "@/lib/api/central/auth"
 import { ApiError } from "@/lib/api/errors"
-import { useCentralAuth } from "@/components/providers/central-auth-provider"
 import { Spinner } from "@/components/ui/spinner"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -30,9 +28,7 @@ export function CentralRegisterForm({
   ...props
 }: React.ComponentProps<"form">) {
   const router = useRouter()
-  const { loginWithToken } = useCentralAuth()
   const [globalError, setGlobalError] = useState<string | null>(null)
-  const [socialLoading, setSocialLoading] = useState<"google" | "facebook" | "github" | null>(null)
 
   const {
     register,
@@ -46,11 +42,9 @@ export function CentralRegisterForm({
   const onSubmit = async (data: RegisterFormValues) => {
     setGlobalError(null)
     try {
-      const response = await centralAuthService.register(data)
-      const { user, token } = response.data
-      loginWithToken(token, user)
-      router.push("/central/dashboard")
-      router.refresh()
+      await centralAuthService.register(data)
+      // After registration, redirect to verify email
+      router.push(`/central/verify-email?email=${encodeURIComponent(data.email)}`)
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 422 && error.errors) {
@@ -69,19 +63,7 @@ export function CentralRegisterForm({
     }
   }
 
-  const handleSocialLogin = async (provider: "google" | "facebook" | "github") => {
-    try {
-      setSocialLoading(provider)
-      setGlobalError(null)
-      const response = await centralAuthService.getSocialRedirect(provider)
-      window.location.href = response.data.url
-    } catch {
-      setGlobalError(`Failed to initialize ${provider} login.`)
-      setSocialLoading(null)
-    }
-  }
-
-  const isFormDisabled = isSubmitting || socialLoading !== null
+  const isFormDisabled = isSubmitting
 
   return (
     <form
@@ -132,6 +114,20 @@ export function CentralRegisterForm({
         </Field>
 
         <Field>
+          <FieldLabel htmlFor="phone">Phone (Optional)</FieldLabel>
+          <Input
+            {...register("phone")}
+            id="phone"
+            type="tel"
+            placeholder="+1234567890"
+            disabled={isFormDisabled}
+          />
+          {errors.phone && (
+            <p className="text-xs text-destructive">{errors.phone.message}</p>
+          )}
+        </Field>
+
+        <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <PasswordInput
             {...register("password")}
@@ -167,20 +163,6 @@ export function CentralRegisterForm({
             )}
           </Button>
         </Field>
-
-        <FieldSeparator>Or continue with</FieldSeparator>
-
-        <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" type="button" disabled={isFormDisabled} onClick={() => handleSocialLogin("google")}>
-            {socialLoading === "google" ? <Spinner className="size-4" /> : "Google"}
-          </Button>
-          <Button variant="outline" type="button" disabled={isFormDisabled} onClick={() => handleSocialLogin("github")}>
-            {socialLoading === "github" ? <Spinner className="size-4" /> : "GitHub"}
-          </Button>
-          <Button variant="outline" type="button" disabled={isFormDisabled} onClick={() => handleSocialLogin("facebook")}>
-            {socialLoading === "facebook" ? <Spinner className="size-4" /> : "Facebook"}
-          </Button>
-        </div>
 
         <Field>
           <FieldDescription className="text-center">

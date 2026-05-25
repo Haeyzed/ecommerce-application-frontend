@@ -37,7 +37,7 @@ export function CentralForgotPasswordForm({
     setSuccessMessage(null)
     try {
       await centralAuthService.forgotPassword(data)
-      setSuccessMessage("Password reset link sent! Check your email.")
+      setSuccessMessage("Password reset OTP sent! Check your email.")
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 422 && error.errors) {
@@ -66,7 +66,7 @@ export function CentralForgotPasswordForm({
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Forgot Password</h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Enter your email and we&apos;ll send you a reset link
+            Enter your email and we&apos;ll send you an OTP to reset your password
           </p>
         </div>
 
@@ -105,7 +105,7 @@ export function CentralForgotPasswordForm({
                 Sending...
               </>
             ) : (
-              "Send Reset Link"
+              "Send Reset OTP"
             )}
           </Button>
         </Field>

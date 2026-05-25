@@ -1,9 +1,12 @@
-export type ApiStatus = "success" | "error" | "fail";
-
 export type ApiResponse<TData = unknown, TErrors = Record<string, string[]>> = {
-  status: ApiStatus;
+  success: boolean;
   message: string;
   data: TData;
-  meta: Record<string, unknown> | null;
-  errors: TErrors | null;
+  meta: string | null;
+  errors?: TErrors | null;
+};
+
+export type ApiErrorResponse = {
+  message: string;
+  errors: Record<string, string[]>;
 };

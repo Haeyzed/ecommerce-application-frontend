@@ -10,13 +10,13 @@ import React, { useEffect } from "react"
  */
 export function TenantRouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { isAuthenticated, isLoading, role } = useTenantAuth()
+  const { isAuthenticated, isLoading, userType } = useTenantAuth()
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace(role === "admin" ? "/admin/dashboard" : "/customer/dashboard")
+      router.replace(userType === "admin" ? "/admin/dashboard" : "/customer/dashboard")
     }
-  }, [isAuthenticated, isLoading, role, router])
+  }, [isAuthenticated, isLoading, userType, router])
 
   if (isLoading || isAuthenticated) {
     return (

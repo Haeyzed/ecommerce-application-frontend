@@ -17,6 +17,7 @@ import { ApiError } from "@/lib/api/errors"
 import { Spinner } from "@/components/ui/spinner"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 
 export function CentralResetPasswordForm({
   className,
@@ -24,20 +25,26 @@ export function CentralResetPasswordForm({
 }: React.ComponentProps<"form">) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [useOtpMode, setUseOtpMode] = useState(!searchParams?.get("token"))
   const [globalError, setGlobalError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     setError,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      token: searchParams?.get("token") ?? "",
+      reset_token: searchParams?.get("token") ?? "",
       email: searchParams?.get("email") ?? "",
     },
   })
+
+  const otp = watch("otp")
+  const email = watch("email")
 
   const onSubmit = async (data: ResetPasswordFormValues) => {
     setGlobalError(null)
@@ -83,7 +90,9 @@ export function CentralResetPasswordForm({
           </Alert>
         )}
 
-        <input type="hidden" {...register("token")} />
+        {!useOtpMode && (
+          <input type="hidden" {...register("reset_token")} />
+        )}
 
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -91,12 +100,37 @@ export function CentralResetPasswordForm({
             {...register("email")}
             id="email"
             type="email"
-            disabled
+            placeholder="admin@example.com"
+            disabled={!useOtpMode || isSubmitting}
           />
           {errors.email && (
             <p className="text-xs text-destructive">{errors.email.message}</p>
           )}
         </Field>
+
+        {useOtpMode && (
+          <Field>
+            <FieldLabel htmlFor="otp">Enter OTP</FieldLabel>
+            <InputOTP
+              maxLength={6}
+              value={otp || ""}
+              onChange={(value) => setValue("otp", value)}
+              disabled={isSubmitting}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+            {errors.otp && (
+              <p className="text-xs text-destructive">{errors.otp.message}</p>
+            )}
+          </Field>
+        )}
 
         <Field>
           <FieldLabel htmlFor="password">New Password</FieldLabel>
@@ -123,7 +157,7 @@ export function CentralResetPasswordForm({
         </Field>
 
         <Field>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || (useOtpMode && otp?.length !== 6)}>
             {isSubmitting ? (
               <>
                 <Spinner className="size-4" />

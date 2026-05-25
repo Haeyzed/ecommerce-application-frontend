@@ -5,7 +5,7 @@ import { TenantAuthProvider } from "@/components/providers/tenant-auth-provider"
 import { usePathname } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 
-function resolveRole(pathname: string): "customer" | "admin" {
+function resolveUserType(pathname: string): "customer" | "admin" {
   if (pathname.startsWith("/admin")) {
     return "admin"
   }
@@ -19,7 +19,7 @@ export default function TenantLayout({
 }) {
   const subdomain = useTenantSubdomain()
   const pathname = usePathname()
-  const role = resolveRole(pathname)
+  const userType = resolveUserType(pathname)
 
   if (!subdomain) {
     return (
@@ -30,7 +30,7 @@ export default function TenantLayout({
   }
 
   return (
-    <TenantAuthProvider subdomain={subdomain} role={role}>
+    <TenantAuthProvider subdomain={subdomain} userType={userType}>
       {children}
     </TenantAuthProvider>
   )
