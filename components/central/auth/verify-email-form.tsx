@@ -2,18 +2,19 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { verifyOtpSchema, resendOtpSchema, type VerifyOtpFormValues } from "@/lib/validation/auth"
+import { verifyOtpSchema, type VerifyOtpFormValues } from "@/lib/validation/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import React, { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { centralAuthService } from "@/lib/api/central/auth"
 import { ApiError } from "@/lib/api/errors"
 
-// Custom Spinner Component
+/**
+ * Loading Spinner Component
+ */
 function LoadingSpinner({ className }: { className?: string }) {
   return (
     <svg
@@ -22,55 +23,39 @@ function LoadingSpinner({ className }: { className?: string }) {
       fill="none"
       viewBox="0 0 24 24"
     >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
   )
 }
 
-// Alert Component
-function FormAlert({ 
-  message, 
-  variant = "error" 
-}: { 
-  message: string
-  variant?: "error" | "success" 
-}) {
+/**
+ * Form Alert Component
+ */
+function FormAlert({ message, variant = "error" }: { message: string; variant?: "error" | "success" }) {
+  const isSuccess = variant === "success"
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm",
-        variant === "error" 
-          ? "border-destructive/30 bg-destructive/10 text-destructive" 
-          : "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
-      )}
-    >
-      {variant === "error" ? (
-        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-        </svg>
-      ) : (
-        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className={cn(
+      "flex items-start gap-3 rounded-lg border px-4 py-3 text-sm",
+      isSuccess
+        ? "border-green-200 bg-green-50 text-green-700"
+        : "border-destructive/20 bg-destructive/5 text-destructive"
+    )}>
+      <svg className="mt-0.5 size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        {isSuccess ? (
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )}
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        )}
+      </svg>
       <span>{message}</span>
     </div>
   )
 }
 
-// OTP Input Component
+/**
+ * OTP Input Component
+ */
 function OtpInput({
   value,
   onChange,
@@ -95,13 +80,10 @@ function OtpInput({
 
   const handleChange = (index: number, inputValue: string) => {
     if (!/^\d*$/.test(inputValue)) return
-
     const newValues = [...localValues]
     newValues[index] = inputValue.slice(-1)
     setLocalValues(newValues)
     onChange(newValues.join(""))
-
-    // Auto-focus next input
     if (inputValue && index < 5) {
       inputRefs.current[index + 1]?.focus()
     }
@@ -119,8 +101,6 @@ function OtpInput({
     const newValues = pastedData.split("").concat(Array(6 - pastedData.length).fill(""))
     setLocalValues(newValues)
     onChange(newValues.join(""))
-    
-    // Focus the next empty input or the last input
     const nextEmptyIndex = newValues.findIndex((v) => !v)
     inputRefs.current[nextEmptyIndex === -1 ? 5 : nextEmptyIndex]?.focus()
   }
@@ -140,11 +120,10 @@ function OtpInput({
           onPaste={handlePaste}
           disabled={disabled}
           className={cn(
-            "size-12 sm:size-14 rounded-xl text-center text-xl font-semibold",
-            "border-border/50 bg-background/50 transition-all",
-            "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive/50 focus:border-destructive focus:ring-destructive/20"
+            "size-12 rounded-lg text-center text-xl font-semibold sm:size-14",
+            "border-border bg-card",
+            "focus:border-primary focus:ring-1 focus:ring-primary",
+            error && "border-destructive focus:border-destructive focus:ring-destructive"
           )}
         />
       ))}
@@ -152,6 +131,10 @@ function OtpInput({
   )
 }
 
+/**
+ * Central Verify Email Form Component
+ * Mercato-style design matching the reference images
+ */
 export function CentralVerifyEmailForm({
   className,
   ...props
@@ -229,69 +212,54 @@ export function CentralVerifyEmailForm({
     }
   }
 
-  const isFormDisabled = isSubmitting
-
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className={cn("flex flex-col", className)}
       {...props}
     >
-      {/* Header */}
-      <div className="mb-8 space-y-2 text-center">
-        <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
-          <svg className="size-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
           Verify your email
         </h1>
-        <p className="text-sm text-muted-foreground">
-          We sent a 6-digit code to
-        </p>
-        <p className="text-sm font-medium text-foreground">
-          {email || "your email address"}
+        <p className="mt-2 text-base text-muted-foreground">
+          We sent a 6-digit code to <span className="font-medium text-foreground">{email || "your email"}</span>
         </p>
       </div>
 
       {/* Messages */}
       {globalError && (
-        <div className="mb-6 animate-in">
+        <div className="mb-6">
           <FormAlert message={globalError} variant="error" />
         </div>
       )}
 
       {successMessage && (
-        <div className="mb-6 animate-in">
+        <div className="mb-6">
           <FormAlert message={successMessage} variant="success" />
         </div>
       )}
 
       {/* OTP Input */}
       <div className="space-y-3">
-        <Label className="sr-only">Verification code</Label>
+        <label className="sr-only">Verification code</label>
         <OtpInput
           value={otpValue}
           onChange={(value) => setValue("otp", value)}
-          disabled={isFormDisabled}
+          disabled={isSubmitting}
           error={!!errors.otp}
         />
         {errors.otp && (
-          <p className="text-center text-xs text-destructive">{errors.otp.message}</p>
+          <p className="text-center text-sm text-destructive">{errors.otp.message}</p>
         )}
       </div>
 
       {/* Submit Button */}
       <Button
         type="submit"
-        disabled={isFormDisabled || otpValue.length !== 6}
-        className={cn(
-          "mt-8 h-12 rounded-xl text-base font-medium transition-all duration-300",
-          "bg-primary hover:bg-primary/90",
-          "shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30",
-          "disabled:opacity-50 disabled:shadow-none"
-        )}
+        disabled={isSubmitting || otpValue.length !== 6}
+        className="mt-8 h-12 rounded-lg bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
       >
         {isSubmitting ? (
           <span className="flex items-center gap-2">
@@ -316,7 +284,7 @@ export function CentralVerifyEmailForm({
               type="button"
               onClick={handleResendOtp}
               disabled={isResending || !email}
-              className="font-medium text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
+              className="font-medium text-primary hover:text-primary/80 disabled:opacity-50"
             >
               {isResending ? "Sending..." : "Resend code"}
             </button>
@@ -324,27 +292,14 @@ export function CentralVerifyEmailForm({
         </p>
       </div>
 
-      {/* Divider */}
-      <div className="relative my-8">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border/50" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-card px-4 text-muted-foreground">
-            Wrong email?
-          </span>
-        </div>
-      </div>
-
-      {/* Back to Register */}
+      {/* Back to Registration Link */}
       <Link
         href="/central/register"
-        className={cn(
-          "flex h-12 items-center justify-center rounded-xl border border-border/50 text-base font-medium",
-          "text-foreground transition-all duration-300",
-          "hover:border-border hover:bg-accent/50"
-        )}
+        className="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
       >
+        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+        </svg>
         Back to registration
       </Link>
     </form>

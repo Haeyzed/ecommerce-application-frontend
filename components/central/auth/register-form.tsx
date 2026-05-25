@@ -6,14 +6,16 @@ import { registerSchema, type RegisterFormValues } from "@/lib/validation/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { centralAuthService } from "@/lib/api/central/auth"
 import { ApiError } from "@/lib/api/errors"
 
-// Custom Spinner Component
+/**
+ * Loading Spinner Component
+ */
 function LoadingSpinner({ className }: { className?: string }) {
   return (
     <svg
@@ -22,63 +24,36 @@ function LoadingSpinner({ className }: { className?: string }) {
       fill="none"
       viewBox="0 0 24 24"
     >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
   )
 }
 
-// Alert Component
-function FormAlert({ 
-  message, 
-  variant = "error" 
-}: { 
-  message: string
-  variant?: "error" | "success" 
-}) {
+/**
+ * Form Error Alert Component
+ */
+function FormAlert({ message }: { message: string }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm",
-        variant === "error" 
-          ? "border-destructive/30 bg-destructive/10 text-destructive" 
-          : "border-green-500/30 bg-green-500/10 text-green-500"
-      )}
-    >
-      {variant === "error" ? (
-        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-        </svg>
-      ) : (
-        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )}
+    <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+      <svg className="mt-0.5 size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+      </svg>
       <span>{message}</span>
     </div>
   )
 }
 
-// Password Input with Toggle
+/**
+ * Password Input with visibility toggle
+ */
 function PasswordInput({
   id,
   error,
   disabled,
+  className,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  error?: string
-}) {
+}: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
@@ -88,11 +63,11 @@ function PasswordInput({
         id={id}
         disabled={disabled}
         className={cn(
-          "h-12 rounded-xl border-border/50 bg-background/50 pr-12 text-base transition-all",
-          "placeholder:text-muted-foreground/60",
-          "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          error && "border-destructive/50 focus:border-destructive focus:ring-destructive/20"
+          "h-12 rounded-lg border-border bg-card pr-11 text-base",
+          "placeholder:text-muted-foreground/50",
+          "focus:border-primary focus:ring-1 focus:ring-primary",
+          error && "border-destructive focus:border-destructive focus:ring-destructive",
+          className
         )}
         {...props}
       />
@@ -100,8 +75,9 @@ function PasswordInput({
         type="button"
         onClick={() => setShowPassword(!showPassword)}
         disabled={disabled}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none"
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
         tabIndex={-1}
+        aria-label={showPassword ? "Hide password" : "Show password"}
       >
         {showPassword ? (
           <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -118,20 +94,17 @@ function PasswordInput({
   )
 }
 
-// Input styles helper
-const inputStyles = cn(
-  "h-12 rounded-xl border-border/50 bg-background/50 text-base transition-all",
-  "placeholder:text-muted-foreground/60",
-  "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
-  "disabled:cursor-not-allowed disabled:opacity-50"
-)
-
+/**
+ * Central Register Form Component
+ * Mercato-style design matching the reference images
+ */
 export function CentralRegisterForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const router = useRouter()
   const [globalError, setGlobalError] = useState<string | null>(null)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const {
     register,
@@ -143,6 +116,10 @@ export function CentralRegisterForm({
   })
 
   const onSubmit = async (data: RegisterFormValues) => {
+    if (!agreedToTerms) {
+      setGlobalError("Please agree to the Terms and Privacy Policy")
+      return
+    }
     setGlobalError(null)
     try {
       await centralAuthService.register(data)
@@ -165,7 +142,11 @@ export function CentralRegisterForm({
     }
   }
 
-  const isFormDisabled = isSubmitting
+  const inputClassName = cn(
+    "h-12 rounded-lg border-border bg-card text-base",
+    "placeholder:text-muted-foreground/50",
+    "focus:border-primary focus:ring-1 focus:ring-primary"
+  )
 
   return (
     <form
@@ -173,145 +154,155 @@ export function CentralRegisterForm({
       className={cn("flex flex-col", className)}
       {...props}
     >
-      {/* Header */}
-      <div className="mb-8 space-y-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Create your account
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+          Join your team
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Get started with Central in just a few steps
+        <p className="mt-2 text-base text-muted-foreground">
+          You&apos;ll need an invite from your organization admin.
         </p>
       </div>
 
       {/* Error Alert */}
       {globalError && (
-        <div className="mb-6 animate-in">
-          <FormAlert message={globalError} variant="error" />
+        <div className="mb-6">
+          <FormAlert message={globalError} />
         </div>
       )}
 
       {/* Form Fields */}
       <div className="space-y-5">
-        {/* Full Name Field */}
-        <div className="space-y-2">
-          <Label htmlFor="name" className="text-sm font-medium text-foreground">
-            Full name
-          </Label>
-          <Input
-            {...register("name")}
-            id="name"
-            type="text"
-            placeholder="Enter your full name"
-            autoComplete="name"
-            disabled={isFormDisabled}
-            className={cn(inputStyles, errors.name && "border-destructive/50 focus:border-destructive focus:ring-destructive/20")}
-          />
-          {errors.name && (
-            <p className="text-xs text-destructive">{errors.name.message}</p>
-          )}
+        {/* Name Fields Row */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="first_name" className="text-sm font-medium text-foreground">
+              First name
+            </label>
+            <Input
+              {...register("name")}
+              id="first_name"
+              type="text"
+              placeholder="John"
+              autoComplete="given-name"
+              disabled={isSubmitting}
+              className={cn(inputClassName, errors.name && "border-destructive")}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="last_name" className="text-sm font-medium text-foreground">
+              Last name
+            </label>
+            <Input
+              id="last_name"
+              type="text"
+              placeholder="Doe"
+              autoComplete="family-name"
+              disabled={isSubmitting}
+              className={inputClassName}
+            />
+          </div>
         </div>
+        {errors.name && (
+          <p className="-mt-3 text-sm text-destructive">{errors.name.message}</p>
+        )}
 
         {/* Email Field */}
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-foreground">
-            Email address
-          </Label>
+          <label htmlFor="email" className="text-sm font-medium text-foreground">
+            Work email
+          </label>
           <Input
             {...register("email")}
             id="email"
             type="email"
-            placeholder="name@company.com"
+            placeholder="you@company.com"
             autoComplete="email"
-            disabled={isFormDisabled}
-            className={cn(inputStyles, errors.email && "border-destructive/50 focus:border-destructive focus:ring-destructive/20")}
+            disabled={isSubmitting}
+            className={cn(inputClassName, errors.email && "border-destructive")}
           />
           {errors.email && (
-            <p className="text-xs text-destructive">{errors.email.message}</p>
+            <p className="text-sm text-destructive">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Phone Field (Optional) */}
+        {/* Phone Field */}
         <div className="space-y-2">
-          <Label htmlFor="phone" className="text-sm font-medium text-foreground">
-            Phone number
-            <span className="ml-1 text-muted-foreground font-normal">(optional)</span>
-          </Label>
+          <label htmlFor="phone" className="text-sm font-medium text-foreground">
+            Invite code
+          </label>
           <Input
             {...register("phone")}
             id="phone"
-            type="tel"
-            placeholder="+1 (555) 000-0000"
-            autoComplete="tel"
-            disabled={isFormDisabled}
-            className={cn(inputStyles, errors.phone && "border-destructive/50 focus:border-destructive focus:ring-destructive/20")}
+            type="text"
+            placeholder="STAFF-XXXX-XXXX"
+            disabled={isSubmitting}
+            className={cn(inputClassName, errors.phone && "border-destructive")}
           />
           {errors.phone && (
-            <p className="text-xs text-destructive">{errors.phone.message}</p>
+            <p className="text-sm text-destructive">{errors.phone.message}</p>
           )}
         </div>
 
         {/* Password Field */}
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium text-foreground">
+          <label htmlFor="password" className="text-sm font-medium text-foreground">
             Password
-          </Label>
+          </label>
           <PasswordInput
             {...register("password")}
             id="password"
-            placeholder="Create a strong password"
+            placeholder="At least 8 characters"
             autoComplete="new-password"
-            disabled={isFormDisabled}
+            disabled={isSubmitting}
             error={errors.password?.message}
           />
           {errors.password && (
-            <p className="text-xs text-destructive">{errors.password.message}</p>
+            <p className="text-sm text-destructive">{errors.password.message}</p>
           )}
-          <p className="text-xs text-muted-foreground">
-            Must be at least 8 characters
-          </p>
         </div>
 
         {/* Confirm Password Field */}
         <div className="space-y-2">
-          <Label htmlFor="password_confirmation" className="text-sm font-medium text-foreground">
+          <label htmlFor="password_confirmation" className="text-sm font-medium text-foreground">
             Confirm password
-          </Label>
+          </label>
           <PasswordInput
             {...register("password_confirmation")}
             id="password_confirmation"
             placeholder="Confirm your password"
             autoComplete="new-password"
-            disabled={isFormDisabled}
+            disabled={isSubmitting}
             error={errors.password_confirmation?.message}
           />
           {errors.password_confirmation && (
-            <p className="text-xs text-destructive">{errors.password_confirmation.message}</p>
+            <p className="text-sm text-destructive">{errors.password_confirmation.message}</p>
           )}
         </div>
-      </div>
 
-      {/* Terms Notice */}
-      <p className="mt-6 text-xs text-center text-muted-foreground">
-        By creating an account, you agree to our{" "}
-        <Link href="#" className="text-primary hover:underline">
-          Terms of Service
-        </Link>{" "}
-        and{" "}
-        <Link href="#" className="text-primary hover:underline">
-          Privacy Policy
-        </Link>
-      </p>
+        {/* Terms Agreement */}
+        <div className="flex items-center gap-2.5">
+          <Checkbox
+            id="terms"
+            checked={agreedToTerms}
+            onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+            disabled={isSubmitting}
+            className="size-[18px] rounded-full border-border data-[state=checked]:border-primary data-[state=checked]:bg-primary"
+          />
+          <label htmlFor="terms" className="text-sm text-muted-foreground cursor-pointer select-none">
+            I agree to the{" "}
+            <Link href="#" className="text-primary hover:underline">Terms</Link>
+            {" "}and{" "}
+            <Link href="#" className="text-primary hover:underline">Privacy Policy</Link>
+          </label>
+        </div>
+      </div>
 
       {/* Submit Button */}
       <Button
         type="submit"
-        disabled={isFormDisabled}
-        className={cn(
-          "mt-6 h-12 rounded-xl text-base font-medium transition-all duration-300",
-          "bg-primary hover:bg-primary/90",
-          "shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30",
-          "disabled:opacity-50 disabled:shadow-none"
-        )}
+        disabled={isSubmitting}
+        className="mt-8 h-12 rounded-lg bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
       >
         {isSubmitting ? (
           <span className="flex items-center gap-2">
@@ -323,29 +314,13 @@ export function CentralRegisterForm({
         )}
       </Button>
 
-      {/* Divider */}
-      <div className="relative my-8">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border/50" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-card px-4 text-muted-foreground">
-            Already have an account?
-          </span>
-        </div>
-      </div>
-
       {/* Login Link */}
-      <Link
-        href="/central/login"
-        className={cn(
-          "flex h-12 items-center justify-center rounded-xl border border-border/50 text-base font-medium",
-          "text-foreground transition-all duration-300",
-          "hover:border-border hover:bg-accent/50"
-        )}
-      >
-        Sign in instead
-      </Link>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have one?{" "}
+        <Link href="/central/login" className="font-medium text-primary hover:text-primary/80">
+          Sign in
+        </Link>
+      </p>
     </form>
   )
 }
