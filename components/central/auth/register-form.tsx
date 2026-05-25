@@ -2,26 +2,129 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { registerSchema, RegisterFormValues } from "@/lib/validation/auth"
+import { registerSchema, type RegisterFormValues } from "@/lib/validation/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { PasswordInput } from "@/components/ui/password-input"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Label } from "@/components/ui/label"
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { centralAuthService } from "@/lib/api/central/auth"
 import { ApiError } from "@/lib/api/errors"
-import { Spinner } from "@/components/ui/spinner"
-import { Alert01Icon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
+
+// Custom Spinner Component
+function LoadingSpinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn("animate-spin", className)}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  )
+}
+
+// Alert Component
+function FormAlert({ 
+  message, 
+  variant = "error" 
+}: { 
+  message: string
+  variant?: "error" | "success" 
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm",
+        variant === "error" 
+          ? "border-destructive/30 bg-destructive/10 text-destructive" 
+          : "border-green-500/30 bg-green-500/10 text-green-500"
+      )}
+    >
+      {variant === "error" ? (
+        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+      ) : (
+        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )}
+      <span>{message}</span>
+    </div>
+  )
+}
+
+// Password Input with Toggle
+function PasswordInput({
+  id,
+  error,
+  disabled,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  error?: string
+}) {
+  const [showPassword, setShowPassword] = useState(false)
+
+  return (
+    <div className="relative">
+      <Input
+        type={showPassword ? "text" : "password"}
+        id={id}
+        disabled={disabled}
+        className={cn(
+          "h-12 rounded-xl border-border/50 bg-background/50 pr-12 text-base transition-all",
+          "placeholder:text-muted-foreground/60",
+          "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive/50 focus:border-destructive focus:ring-destructive/20"
+        )}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        disabled={disabled}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none"
+        tabIndex={-1}
+      >
+        {showPassword ? (
+          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+          </svg>
+        ) : (
+          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        )}
+      </button>
+    </div>
+  )
+}
+
+// Input styles helper
+const inputStyles = cn(
+  "h-12 rounded-xl border-border/50 bg-background/50 text-base transition-all",
+  "placeholder:text-muted-foreground/60",
+  "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
+  "disabled:cursor-not-allowed disabled:opacity-50"
+)
 
 export function CentralRegisterForm({
   className,
@@ -43,7 +146,6 @@ export function CentralRegisterForm({
     setGlobalError(null)
     try {
       await centralAuthService.register(data)
-      // After registration, redirect to verify email
       router.push(`/central/verify-email?email=${encodeURIComponent(data.email)}`)
     } catch (error) {
       if (error instanceof ApiError) {
@@ -68,111 +170,182 @@ export function CentralRegisterForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className={cn("flex flex-col gap-6", className)}
+      className={cn("flex flex-col", className)}
       {...props}
     >
-      <FieldGroup>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Create an Account</h1>
-          <p className="text-sm text-balance text-muted-foreground">
-            Register for the central admin platform
-          </p>
+      {/* Header */}
+      <div className="mb-8 space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Create your account
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Get started with Central in just a few steps
+        </p>
+      </div>
+
+      {/* Error Alert */}
+      {globalError && (
+        <div className="mb-6 animate-in">
+          <FormAlert message={globalError} variant="error" />
         </div>
+      )}
 
-        {globalError && (
-          <Alert variant="destructive">
-            <HugeiconsIcon icon={Alert01Icon} className="size-4" />
-            <AlertDescription>{globalError}</AlertDescription>
-          </Alert>
-        )}
-
-        <Field>
-          <FieldLabel htmlFor="name">Full Name</FieldLabel>
+      {/* Form Fields */}
+      <div className="space-y-5">
+        {/* Full Name Field */}
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-sm font-medium text-foreground">
+            Full name
+          </Label>
           <Input
             {...register("name")}
             id="name"
-            placeholder="John Doe"
+            type="text"
+            placeholder="Enter your full name"
+            autoComplete="name"
             disabled={isFormDisabled}
+            className={cn(inputStyles, errors.name && "border-destructive/50 focus:border-destructive focus:ring-destructive/20")}
           />
           {errors.name && (
             <p className="text-xs text-destructive">{errors.name.message}</p>
           )}
-        </Field>
+        </div>
 
-        <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+        {/* Email Field */}
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium text-foreground">
+            Email address
+          </Label>
           <Input
             {...register("email")}
             id="email"
             type="email"
-            placeholder="admin@example.com"
+            placeholder="name@company.com"
+            autoComplete="email"
             disabled={isFormDisabled}
+            className={cn(inputStyles, errors.email && "border-destructive/50 focus:border-destructive focus:ring-destructive/20")}
           />
           {errors.email && (
             <p className="text-xs text-destructive">{errors.email.message}</p>
           )}
-        </Field>
+        </div>
 
-        <Field>
-          <FieldLabel htmlFor="phone">Phone (Optional)</FieldLabel>
+        {/* Phone Field (Optional) */}
+        <div className="space-y-2">
+          <Label htmlFor="phone" className="text-sm font-medium text-foreground">
+            Phone number
+            <span className="ml-1 text-muted-foreground font-normal">(optional)</span>
+          </Label>
           <Input
             {...register("phone")}
             id="phone"
             type="tel"
-            placeholder="+1234567890"
+            placeholder="+1 (555) 000-0000"
+            autoComplete="tel"
             disabled={isFormDisabled}
+            className={cn(inputStyles, errors.phone && "border-destructive/50 focus:border-destructive focus:ring-destructive/20")}
           />
           {errors.phone && (
             <p className="text-xs text-destructive">{errors.phone.message}</p>
           )}
-        </Field>
+        </div>
 
-        <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+        {/* Password Field */}
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-sm font-medium text-foreground">
+            Password
+          </Label>
           <PasswordInput
             {...register("password")}
             id="password"
+            placeholder="Create a strong password"
+            autoComplete="new-password"
             disabled={isFormDisabled}
+            error={errors.password?.message}
           />
           {errors.password && (
             <p className="text-xs text-destructive">{errors.password.message}</p>
           )}
-        </Field>
+          <p className="text-xs text-muted-foreground">
+            Must be at least 8 characters
+          </p>
+        </div>
 
-        <Field>
-          <FieldLabel htmlFor="password_confirmation">Confirm Password</FieldLabel>
+        {/* Confirm Password Field */}
+        <div className="space-y-2">
+          <Label htmlFor="password_confirmation" className="text-sm font-medium text-foreground">
+            Confirm password
+          </Label>
           <PasswordInput
             {...register("password_confirmation")}
             id="password_confirmation"
+            placeholder="Confirm your password"
+            autoComplete="new-password"
             disabled={isFormDisabled}
+            error={errors.password_confirmation?.message}
           />
           {errors.password_confirmation && (
             <p className="text-xs text-destructive">{errors.password_confirmation.message}</p>
           )}
-        </Field>
+        </div>
+      </div>
 
-        <Field>
-          <Button type="submit" disabled={isFormDisabled}>
-            {isSubmitting ? (
-              <>
-                <Spinner className="size-4" />
-                Creating account...
-              </>
-            ) : (
-              "Create Account"
-            )}
-          </Button>
-        </Field>
+      {/* Terms Notice */}
+      <p className="mt-6 text-xs text-center text-muted-foreground">
+        By creating an account, you agree to our{" "}
+        <Link href="#" className="text-primary hover:underline">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="#" className="text-primary hover:underline">
+          Privacy Policy
+        </Link>
+      </p>
 
-        <Field>
-          <FieldDescription className="text-center">
-            Already have an account?{" "}
-            <Link href="/central/login" className="underline underline-offset-4">
-              Login
-            </Link>
-          </FieldDescription>
-        </Field>
-      </FieldGroup>
+      {/* Submit Button */}
+      <Button
+        type="submit"
+        disabled={isFormDisabled}
+        className={cn(
+          "mt-6 h-12 rounded-xl text-base font-medium transition-all duration-300",
+          "bg-primary hover:bg-primary/90",
+          "shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30",
+          "disabled:opacity-50 disabled:shadow-none"
+        )}
+      >
+        {isSubmitting ? (
+          <span className="flex items-center gap-2">
+            <LoadingSpinner className="size-5" />
+            Creating account...
+          </span>
+        ) : (
+          "Create account"
+        )}
+      </Button>
+
+      {/* Divider */}
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border/50" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-card px-4 text-muted-foreground">
+            Already have an account?
+          </span>
+        </div>
+      </div>
+
+      {/* Login Link */}
+      <Link
+        href="/central/login"
+        className={cn(
+          "flex h-12 items-center justify-center rounded-xl border border-border/50 text-base font-medium",
+          "text-foreground transition-all duration-300",
+          "hover:border-border hover:bg-accent/50"
+        )}
+      >
+        Sign in instead
+      </Link>
     </form>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { resetPasswordSchema, type ResetPasswordFormValues } from "@/lib/validation/auth"
+import { verifyOtpSchema, resendOtpSchema, type VerifyOtpFormValues } from "@/lib/validation/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -101,6 +101,7 @@ function OtpInput({
     setLocalValues(newValues)
     onChange(newValues.join(""))
 
+    // Auto-focus next input
     if (inputValue && index < 5) {
       inputRefs.current[index + 1]?.focus()
     }
@@ -119,6 +120,7 @@ function OtpInput({
     setLocalValues(newValues)
     onChange(newValues.join(""))
     
+    // Focus the next empty input or the last input
     const nextEmptyIndex = newValues.findIndex((v) => !v)
     inputRefs.current[nextEmptyIndex === -1 ? 5 : nextEmptyIndex]?.focus()
   }
@@ -150,115 +152,80 @@ function OtpInput({
   )
 }
 
-// Password Input with Toggle
-function PasswordInput({
-  id,
-  error,
-  disabled,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  error?: string
-}) {
-  const [showPassword, setShowPassword] = useState(false)
-
-  return (
-    <div className="relative">
-      <Input
-        type={showPassword ? "text" : "password"}
-        id={id}
-        disabled={disabled}
-        className={cn(
-          "h-12 rounded-xl border-border/50 bg-background/50 pr-12 text-base transition-all",
-          "placeholder:text-muted-foreground/60",
-          "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          error && "border-destructive/50 focus:border-destructive focus:ring-destructive/20"
-        )}
-        {...props}
-      />
-      <button
-        type="button"
-        onClick={() => setShowPassword(!showPassword)}
-        disabled={disabled}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none"
-        tabIndex={-1}
-      >
-        {showPassword ? (
-          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-          </svg>
-        ) : (
-          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        )}
-      </button>
-    </div>
-  )
-}
-
-// Input styles helper
-const inputStyles = cn(
-  "h-12 rounded-xl border-border/50 bg-background/50 text-base transition-all",
-  "placeholder:text-muted-foreground/60",
-  "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
-  "disabled:cursor-not-allowed disabled:opacity-50"
-)
-
-export function CentralResetPasswordForm({
+export function CentralVerifyEmailForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [useOtpMode] = useState(!searchParams?.get("token"))
+  const email = searchParams?.get("email") || ""
+  
   const [globalError, setGlobalError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isResending, setIsResending] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
 
   const {
-    register,
     handleSubmit,
-    setError,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<ResetPasswordFormValues>({
-    resolver: zodResolver(resetPasswordSchema),
+    formState: { isSubmitting, errors },
+  } = useForm<VerifyOtpFormValues>({
+    resolver: zodResolver(verifyOtpSchema),
     defaultValues: {
-      reset_token: searchParams?.get("token") ?? "",
-      email: searchParams?.get("email") ?? "",
-      password: "",
-      password_confirmation: "",
+      email,
+      otp: "",
+      type: "email_verification",
     },
   })
 
-  const otp = watch("otp")
+  const otpValue = watch("otp")
 
-  const onSubmit = async (data: ResetPasswordFormValues) => {
+  // Cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [resendCooldown])
+
+  const onSubmit = async (data: VerifyOtpFormValues) => {
     setGlobalError(null)
     setSuccessMessage(null)
     try {
-      await centralAuthService.resetPassword(data)
-      setSuccessMessage("Password reset successfully! Redirecting to login...")
+      await centralAuthService.verifyOtp(data)
+      setSuccessMessage("Email verified successfully! Redirecting to login...")
       setTimeout(() => {
-        router.push("/central/login?reset=success")
+        router.push("/central/login")
       }, 2000)
     } catch (error) {
       if (error instanceof ApiError) {
-        if (error.status === 422 && error.errors) {
-          Object.entries(error.errors).forEach(([key, messages]) => {
-            setError(key as keyof ResetPasswordFormValues, {
-              type: "server",
-              message: messages[0],
-            })
-          })
-        } else {
-          setGlobalError(error.message)
-        }
+        setGlobalError(error.message)
       } else {
-        setGlobalError("An unexpected error occurred. Please try again.")
+        setGlobalError("Verification failed. Please try again.")
       }
+    }
+  }
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || !email) return
+    
+    setIsResending(true)
+    setGlobalError(null)
+    setSuccessMessage(null)
+    
+    try {
+      await centralAuthService.resendVerificationOtp({ email })
+      setSuccessMessage("A new verification code has been sent to your email.")
+      setResendCooldown(60)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setGlobalError(error.message)
+      } else {
+        setGlobalError("Failed to resend code. Please try again.")
+      }
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -274,14 +241,17 @@ export function CentralResetPasswordForm({
       <div className="mb-8 space-y-2 text-center">
         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
           <svg className="size-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
           </svg>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Reset your password
+          Verify your email
         </h1>
         <p className="text-sm text-muted-foreground">
-          Enter your new password below
+          We sent a 6-digit code to
+        </p>
+        <p className="text-sm font-medium text-foreground">
+          {email || "your email address"}
         </p>
       </div>
 
@@ -298,94 +268,24 @@ export function CentralResetPasswordForm({
         </div>
       )}
 
-      {/* Hidden token field */}
-      {!useOtpMode && (
-        <input type="hidden" {...register("reset_token")} />
-      )}
-
-      {/* Form Fields */}
-      <div className="space-y-5">
-        {/* Email Field */}
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-foreground">
-            Email address
-          </Label>
-          <Input
-            {...register("email")}
-            id="email"
-            type="email"
-            placeholder="name@company.com"
-            autoComplete="email"
-            disabled={!useOtpMode || isFormDisabled}
-            className={cn(inputStyles, errors.email && "border-destructive/50 focus:border-destructive focus:ring-destructive/20")}
-          />
-          {errors.email && (
-            <p className="text-xs text-destructive">{errors.email.message}</p>
-          )}
-        </div>
-
-        {/* OTP Field */}
-        {useOtpMode && (
-          <div className="space-y-3">
-            <Label className="text-sm font-medium text-foreground">
-              Verification code
-            </Label>
-            <OtpInput
-              value={otp || ""}
-              onChange={(value) => setValue("otp", value)}
-              disabled={isFormDisabled}
-              error={!!errors.otp}
-            />
-            {errors.otp && (
-              <p className="text-center text-xs text-destructive">{errors.otp.message}</p>
-            )}
-          </div>
+      {/* OTP Input */}
+      <div className="space-y-3">
+        <Label className="sr-only">Verification code</Label>
+        <OtpInput
+          value={otpValue}
+          onChange={(value) => setValue("otp", value)}
+          disabled={isFormDisabled}
+          error={!!errors.otp}
+        />
+        {errors.otp && (
+          <p className="text-center text-xs text-destructive">{errors.otp.message}</p>
         )}
-
-        {/* New Password Field */}
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium text-foreground">
-            New password
-          </Label>
-          <PasswordInput
-            {...register("password")}
-            id="password"
-            placeholder="Enter new password"
-            autoComplete="new-password"
-            disabled={isFormDisabled}
-            error={errors.password?.message}
-          />
-          {errors.password && (
-            <p className="text-xs text-destructive">{errors.password.message}</p>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Must be at least 8 characters
-          </p>
-        </div>
-
-        {/* Confirm Password Field */}
-        <div className="space-y-2">
-          <Label htmlFor="password_confirmation" className="text-sm font-medium text-foreground">
-            Confirm new password
-          </Label>
-          <PasswordInput
-            {...register("password_confirmation")}
-            id="password_confirmation"
-            placeholder="Confirm new password"
-            autoComplete="new-password"
-            disabled={isFormDisabled}
-            error={errors.password_confirmation?.message}
-          />
-          {errors.password_confirmation && (
-            <p className="text-xs text-destructive">{errors.password_confirmation.message}</p>
-          )}
-        </div>
       </div>
 
       {/* Submit Button */}
       <Button
         type="submit"
-        disabled={isFormDisabled || (useOtpMode && otp?.length !== 6)}
+        disabled={isFormDisabled || otpValue.length !== 6}
         className={cn(
           "mt-8 h-12 rounded-xl text-base font-medium transition-all duration-300",
           "bg-primary hover:bg-primary/90",
@@ -396,12 +296,33 @@ export function CentralResetPasswordForm({
         {isSubmitting ? (
           <span className="flex items-center gap-2">
             <LoadingSpinner className="size-5" />
-            Resetting password...
+            Verifying...
           </span>
         ) : (
-          "Reset password"
+          "Verify email"
         )}
       </Button>
+
+      {/* Resend Link */}
+      <div className="mt-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Didn&apos;t receive the code?{" "}
+          {resendCooldown > 0 ? (
+            <span className="text-muted-foreground">
+              Resend in {resendCooldown}s
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={isResending || !email}
+              className="font-medium text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
+            >
+              {isResending ? "Sending..." : "Resend code"}
+            </button>
+          )}
+        </p>
+      </div>
 
       {/* Divider */}
       <div className="relative my-8">
@@ -410,21 +331,21 @@ export function CentralResetPasswordForm({
         </div>
         <div className="relative flex justify-center text-xs">
           <span className="bg-card px-4 text-muted-foreground">
-            Remember your password?
+            Wrong email?
           </span>
         </div>
       </div>
 
-      {/* Back to Login */}
+      {/* Back to Register */}
       <Link
-        href="/central/login"
+        href="/central/register"
         className={cn(
           "flex h-12 items-center justify-center rounded-xl border border-border/50 text-base font-medium",
           "text-foreground transition-all duration-300",
           "hover:border-border hover:bg-accent/50"
         )}
       >
-        Back to sign in
+        Back to registration
       </Link>
     </form>
   )

@@ -1,30 +1,25 @@
-"use client"
-
+import { CentralVerifyEmailForm } from "@/components/central/auth/verify-email-form"
+import { Metadata } from "next"
 import { Suspense } from "react"
-import { CentralVerifyEmailForm } from "components/central/auth/central-verify-email-form"
-import { CentralMetadata } from "components/central/central-metadata"
-import { useSearchParams } from "next/navigation"
 
-function ResendVerifyEmailContent() {
-  const searchParams = useSearchParams()
-  const email = searchParams?.get("email")
+export const metadata: Metadata = {
+  title: "Resend Verification | Central Admin",
+  description: "Resend your email verification code.",
+}
 
+function ResendLoading() {
   return (
-    <>
-      <CentralMetadata pageTitle="Resend Verification Email" />
-      <div className="flex min-h-svh items-center justify-center p-6">
-        <div className="w-full max-w-xs">
-          <CentralVerifyEmailForm email={email || undefined} />
-        </div>
-      </div>
-    </>
+    <div className="flex flex-col items-center justify-center py-12">
+      <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
+    </div>
   )
 }
 
 export default function CentralResendVerifyEmailPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ResendVerifyEmailContent />
+    <Suspense fallback={<ResendLoading />}>
+      <CentralVerifyEmailForm />
     </Suspense>
   )
 }

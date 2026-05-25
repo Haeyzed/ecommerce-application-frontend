@@ -2,28 +2,124 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { loginSchema, LoginFormValues } from "@/lib/validation/auth"
+import { loginSchema, type LoginFormValues } from "@/lib/validation/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { PasswordInput } from "@/components/ui/password-input"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { centralAuthService } from "@/lib/api/central/auth"
 import { ApiError } from "@/lib/api/errors"
 import { useCentralAuth } from "@/components/providers/central-auth-provider"
-import { Spinner } from "@/components/ui/spinner"
-import { Alert01Icon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
-import type { User, LoginData } from "@/lib/types/models/auth"
+import type { User } from "@/lib/types/models/auth"
+
+// Custom Spinner Component
+function LoadingSpinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn("animate-spin", className)}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  )
+}
+
+// Alert Component
+function FormAlert({ 
+  message, 
+  variant = "error" 
+}: { 
+  message: string
+  variant?: "error" | "success" 
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm",
+        variant === "error" 
+          ? "border-destructive/30 bg-destructive/10 text-destructive" 
+          : "border-green-500/30 bg-green-500/10 text-green-500"
+      )}
+    >
+      {variant === "error" ? (
+        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+      ) : (
+        <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )}
+      <span>{message}</span>
+    </div>
+  )
+}
+
+// Password Input with Toggle
+function PasswordInput({
+  id,
+  error,
+  disabled,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  error?: string
+}) {
+  const [showPassword, setShowPassword] = useState(false)
+
+  return (
+    <div className="relative">
+      <Input
+        type={showPassword ? "text" : "password"}
+        id={id}
+        disabled={disabled}
+        className={cn(
+          "h-12 rounded-xl border-border/50 bg-background/50 pr-12 text-base transition-all",
+          "placeholder:text-muted-foreground/60",
+          "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive/50 focus:border-destructive focus:ring-destructive/20"
+        )}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        disabled={disabled}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none"
+        tabIndex={-1}
+      >
+        {showPassword ? (
+          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+          </svg>
+        ) : (
+          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        )}
+      </button>
+    </div>
+  )
+}
 
 export function CentralLoginForm({
   className,
@@ -41,6 +137,9 @@ export function CentralLoginForm({
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      remember: false,
+    },
   })
 
   useEffect(() => {
@@ -80,80 +179,147 @@ export function CentralLoginForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className={cn("flex flex-col gap-6", className)}
+      className={cn("flex flex-col", className)}
       {...props}
     >
-      <FieldGroup>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Central Admin Login</h1>
-          <p className="text-sm text-balance text-muted-foreground">
-            Enter your email below to access the admin dashboard
-          </p>
+      {/* Header */}
+      <div className="mb-8 space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Welcome back
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Enter your credentials to access your account
+        </p>
+      </div>
+
+      {/* Error Alert */}
+      {globalError && (
+        <div className="mb-6 animate-in">
+          <FormAlert message={globalError} variant="error" />
         </div>
+      )}
 
-        {globalError && (
-          <Alert variant="destructive">
-            <HugeiconsIcon icon={Alert01Icon} className="size-4" />
-            <AlertDescription>{globalError}</AlertDescription>
-          </Alert>
-        )}
-
-        <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+      {/* Form Fields */}
+      <div className="space-y-5">
+        {/* Email Field */}
+        <div className="space-y-2">
+          <Label 
+            htmlFor="email" 
+            className="text-sm font-medium text-foreground"
+          >
+            Email address
+          </Label>
           <Input
             {...register("email")}
             id="email"
             type="email"
-            placeholder="admin@example.com"
+            placeholder="name@company.com"
+            autoComplete="email"
             disabled={isFormDisabled}
+            className={cn(
+              "h-12 rounded-xl border-border/50 bg-background/50 text-base transition-all",
+              "placeholder:text-muted-foreground/60",
+              "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              errors.email && "border-destructive/50 focus:border-destructive focus:ring-destructive/20"
+            )}
           />
           {errors.email && (
             <p className="text-xs text-destructive">{errors.email.message}</p>
           )}
-        </Field>
+        </div>
 
-        <Field>
-          <div className="flex items-center">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+        {/* Password Field */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label 
+              htmlFor="password" 
+              className="text-sm font-medium text-foreground"
+            >
+              Password
+            </Label>
             <Link
               href="/central/forgot-password"
-              className="ms-auto text-sm underline-offset-4 hover:underline"
+              className="text-xs font-medium text-primary transition-colors hover:text-primary/80"
+              tabIndex={-1}
             >
-              Forgot your password?
+              Forgot password?
             </Link>
           </div>
           <PasswordInput
             {...register("password")}
             id="password"
+            placeholder="Enter your password"
+            autoComplete="current-password"
             disabled={isFormDisabled}
+            error={errors.password?.message}
           />
           {errors.password && (
             <p className="text-xs text-destructive">{errors.password.message}</p>
           )}
-        </Field>
+        </div>
 
-        <Field>
-          <Button type="submit" disabled={isFormDisabled}>
-            {isSubmitting ? (
-              <>
-                <Spinner className="size-4" />
-                Logging in...
-              </>
-            ) : (
-              "Login"
-            )}
-          </Button>
-        </Field>
+        {/* Remember Me */}
+        <div className="flex items-center gap-3">
+          <Checkbox
+            id="remember"
+            {...register("remember")}
+            disabled={isFormDisabled}
+            className="size-4 rounded border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+          />
+          <Label
+            htmlFor="remember"
+            className="text-sm font-normal text-muted-foreground cursor-pointer"
+          >
+            Keep me signed in
+          </Label>
+        </div>
+      </div>
 
-        <Field>
-          <FieldDescription className="text-center">
-            Don&apos;t have an account?{" "}
-            <Link href="/central/register" className="underline underline-offset-4">
-              Sign up
-            </Link>
-          </FieldDescription>
-        </Field>
-      </FieldGroup>
+      {/* Submit Button */}
+      <Button
+        type="submit"
+        disabled={isFormDisabled}
+        className={cn(
+          "mt-8 h-12 rounded-xl text-base font-medium transition-all duration-300",
+          "bg-primary hover:bg-primary/90",
+          "shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30",
+          "disabled:opacity-50 disabled:shadow-none"
+        )}
+      >
+        {isSubmitting ? (
+          <span className="flex items-center gap-2">
+            <LoadingSpinner className="size-5" />
+            Signing in...
+          </span>
+        ) : (
+          "Sign in"
+        )}
+      </Button>
+
+      {/* Divider */}
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border/50" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-card px-4 text-muted-foreground">
+            New to Central?
+          </span>
+        </div>
+      </div>
+
+      {/* Register Link */}
+      <Link
+        href="/central/register"
+        className={cn(
+          "flex h-12 items-center justify-center rounded-xl border border-border/50 text-base font-medium",
+          "text-foreground transition-all duration-300",
+          "hover:border-border hover:bg-accent/50"
+        )}
+      >
+        Create an account
+      </Link>
     </form>
   )
 }
