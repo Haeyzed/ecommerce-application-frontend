@@ -53,8 +53,8 @@ export function CentralLoginForm({
     setGlobalError(null)
     try {
       const response = await centralAuthService.login(data)
-      const loginResponse = response.data.data
-      loginWithToken(loginResponse.token, loginResponse.user)
+      const { user, token } = response.data as unknown as { user: User; token: string }
+      loginWithToken(token, user)
       router.push("/central/dashboard")
       router.refresh()
     } catch (error) {

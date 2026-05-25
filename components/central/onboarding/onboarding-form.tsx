@@ -57,7 +57,7 @@ export function OnboardingForm() {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<OnboardTenantFormValues>({
-    resolver: zodResolver(onboardTenantSchema),
+    resolver: zodResolver(onboardTenantSchema) as any,
     defaultValues: {
       storage_provider: "public",
       storage_settings: { public: { enabled: true } },

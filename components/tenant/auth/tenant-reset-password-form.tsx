@@ -38,8 +38,10 @@ export function TenantResetPasswordForm({ userType }: TenantResetPasswordFormPro
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      token: searchParams?.get("token") ?? "",
+      reset_token: searchParams?.get("token") ?? "",
       email: searchParams?.get("email") ?? "",
+      password: "",
+      password_confirmation: "",
     },
   })
 
@@ -114,7 +116,7 @@ export function TenantResetPasswordForm({ userType }: TenantResetPasswordFormPro
                   <AlertDescription>{globalError}</AlertDescription>
                 </Alert>
               )}
-              <input type="hidden" {...register("token")} />
+              <input type="hidden" {...register("reset_token")} />
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input {...register("email")} id="email" type="email" disabled />

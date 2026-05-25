@@ -43,6 +43,8 @@ export function ResetPasswordForm({
     defaultValues: {
       reset_token: token,
       email: email,
+      password: "",
+      password_confirmation: "",
     },
   })
 

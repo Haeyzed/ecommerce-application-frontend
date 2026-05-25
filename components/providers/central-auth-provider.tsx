@@ -37,7 +37,7 @@ async function fetchCentralUser(): Promise<User | null> {
 
   try {
     const response = await centralAuthService.getMe()
-    return response.data.data
+    return response.data as unknown as User
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       removeToken("central")
@@ -51,7 +51,7 @@ async function fetchCentralSettings(): Promise<CentralSettings | null> {
   try {
     const service = createCentralSettingsService()
     const response = await service.getPublicSettings()
-    return response.data.data
+    return response.data as unknown as CentralSettings
   } catch {
     return null
   }

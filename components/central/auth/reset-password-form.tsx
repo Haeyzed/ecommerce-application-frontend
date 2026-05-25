@@ -40,6 +40,8 @@ export function CentralResetPasswordForm({
     defaultValues: {
       reset_token: searchParams?.get("token") ?? "",
       email: searchParams?.get("email") ?? "",
+      password: "",
+      password_confirmation: "",
     },
   })
 
